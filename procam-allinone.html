@@ -1,0 +1,1796 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>CineOS — Pro Camera</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Exo+2:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --bg: #050608;
+  --panel: #0c0e12;
+  --panel2: #12151b;
+  --panel3: #181c24;
+  --accent: #c8a96e;
+  --accent2: #e8c87a;
+  --gold: #d4a843;
+  --amber: #f0a500;
+  --teal: #00e5c8;
+  --cyan: #00cfff;
+  --red: #ff2440;
+  --red2: #ff0028;
+  --green: #00e87a;
+  --orange: #ff6b00;
+  --purple: #a855f7;
+  --text: #dde4ee;
+  --text-mid: #8a97aa;
+  --text-dim: #3d4a5c;
+  --border: #1a2030;
+  --border2: #222c3a;
+  --glow-gold: 0 0 20px rgba(200,169,110,0.35);
+  --glow-teal: 0 0 16px rgba(0,229,200,0.3);
+  --glow-red: 0 0 20px rgba(255,36,64,0.5);
+  --mono: 'Orbitron', monospace;
+  --ui: 'Exo 2', sans-serif;
+}
+
+/* THEME VARIABLES */
+.theme-cinema { --accent:#c8a96e; --accent2:#e8c87a; --teal:#00e5c8; --cyan:#00cfff; }
+.theme-arri    { --accent:#ff6b00; --accent2:#ffa040; --teal:#00d4ff; --cyan:#00aaff; }
+.theme-red     { --accent:#ff2440; --accent2:#ff6677; --teal:#00ff88; --cyan:#00ee77; }
+.theme-venice  { --accent:#a855f7; --accent2:#c084fc; --teal:#f0a500; --cyan:#ffb830; }
+.theme-alexa   { --accent:#00e5c8; --accent2:#00ffdd; --teal:#c8a96e; --cyan:#e8c87a; }
+
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html,body { height:100dvh; overflow:hidden; }
+
+body {
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--ui);
+  display:flex;
+  flex-direction:column;
+  touch-action:manipulation;
+}
+
+/* ═══ TOP BAR ══════════════════════════════════════════ */
+#topbar {
+  background: linear-gradient(180deg, #0e1118 0%, #090b0f 100%);
+  border-bottom: 1px solid var(--border2);
+  height: 58px;
+  display: flex;
+  align-items: center;
+  padding: 0 6px;
+  gap: 2px;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 30;
+}
+#topbar::after {
+  content:'';
+  position:absolute;
+  bottom:0; left:0; right:0;
+  height:1px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  opacity:0.4;
+}
+
+.param {
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  padding:4px 8px;
+  border-radius:5px;
+  cursor:pointer;
+  min-width:56px;
+  border:1px solid transparent;
+  transition:all .15s;
+  user-select:none;
+  position:relative;
+}
+.param:hover { background:var(--panel2); border-color:var(--border2); }
+.param.sel {
+  background: linear-gradient(135deg,rgba(200,169,110,0.12),rgba(200,169,110,0.04));
+  border-color:var(--accent);
+  box-shadow: var(--glow-gold);
+}
+.param-label {
+  font-family:var(--ui);
+  font-size:9px; font-weight:600;
+  color:var(--text-dim);
+  letter-spacing:1.2px;
+  text-transform:uppercase;
+  line-height:1;
+}
+.param-value {
+  font-family:var(--mono);
+  font-size:13px;
+  color:var(--text);
+  line-height:1.4;
+  white-space:nowrap;
+}
+.param-value.gold { color:var(--accent2); }
+.param-value.teal { color:var(--teal); }
+.param-value.dim  { color:var(--text-mid); }
+.auto-badge {
+  display:inline-block;
+  background:var(--teal);
+  color:#000;
+  font-size:7px;
+  font-weight:800;
+  padding:1px 3px;
+  border-radius:2px;
+  letter-spacing:.5px;
+  margin-left:2px;
+  vertical-align:middle;
+}
+
+#tc-wrap {
+  flex:1; text-align:center;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  gap:2px;
+}
+#timecode {
+  font-family:var(--mono);
+  font-size:clamp(14px,2.5vw,22px);
+  letter-spacing:3px;
+  color:var(--text);
+  line-height:1;
+}
+#timecode.rec { color:var(--red); animation:tc-blink 1s steps(1) infinite; }
+@keyframes tc-blink { 50%{opacity:.3} }
+#quality-badge {
+  font-family:var(--mono);
+  font-size:9px;
+  color:var(--accent);
+  letter-spacing:2px;
+  opacity:.7;
+}
+
+.vsep { width:1px; height:34px; background:var(--border2); margin:0 2px; flex-shrink:0; }
+
+/* ═══ MAIN AREA ═════════════════════════════════════════ */
+#main {
+  flex:1;
+  display:flex;
+  overflow:hidden;
+  position:relative;
+}
+
+/* ═══ VIEWPORT ══════════════════════════════════════════ */
+#viewport {
+  flex:1;
+  position:relative;
+  background:#000;
+  overflow:hidden;
+}
+#camera-feed {
+  width:100%; height:100%;
+  object-fit:cover;
+  display:none;
+  transition:filter .4s;
+}
+
+/* CINEMATIC BARS */
+#cin-top, #cin-bot {
+  position:absolute; left:0; right:0;
+  background:#000;
+  z-index:5;
+  pointer-events:none;
+  transition:height .4s;
+}
+#cin-top { top:0; height:0; }
+#cin-bot { bottom:0; height:0; }
+body.cinemascope #cin-top,
+body.cinemascope #cin-bot { height:10%; }
+
+/* OVERLAYS */
+#grid-svg {
+  position:absolute; inset:0;
+  pointer-events:none;
+  display:none; z-index:6;
+}
+#grid-svg.show { display:block; }
+#grid-svg line { stroke:rgba(255,255,255,.15); stroke-width:.5; }
+#grid-svg circle { stroke:rgba(255,255,255,.2); fill:none; stroke-width:.5; }
+
+#safe-zones {
+  position:absolute; inset:0;
+  pointer-events:none; display:none; z-index:6;
+}
+#safe-zones.show { display:block; }
+.safe-rect {
+  position:absolute;
+  border:1px solid rgba(200,169,110,.35);
+  border-radius:2px;
+}
+
+#focus-box {
+  position:absolute; top:50%; left:50%;
+  transform:translate(-50%,-50%);
+  width:90px; height:90px;
+  display:none; z-index:7; pointer-events:none;
+}
+#focus-box.show { display:block; }
+#focus-box::before,#focus-box::after,
+.fb2::before,.fb2::after {
+  content:''; position:absolute; background:var(--amber);
+}
+#focus-box::before { top:0;left:0;width:14px;height:1px; }
+#focus-box::after  { top:0;left:0;width:1px;height:14px; }
+.fb2::before { bottom:0;right:0;width:14px;height:1px; }
+.fb2::after  { bottom:0;right:0;width:1px;height:14px; }
+
+/* Zebra pattern (overexposure) */
+#zebra-canvas {
+  position:absolute; inset:0;
+  pointer-events:none; z-index:6;
+  display:none; mix-blend-mode:overlay; opacity:.6;
+}
+#zebra-canvas.show { display:block; }
+
+/* False color overlay */
+#fc-canvas {
+  position:absolute; inset:0;
+  pointer-events:none; z-index:6;
+  display:none; mix-blend-mode:hard-light; opacity:.5;
+}
+
+/* REC indicator */
+#rec-dot {
+  position:absolute; top:14px; left:16px;
+  width:8px; height:8px;
+  border-radius:50%; background:var(--red);
+  display:none; z-index:10;
+  box-shadow:var(--glow-red);
+  animation:rdot 1s ease infinite;
+}
+@keyframes rdot{0%,100%{opacity:1}50%{opacity:0}}
+#rec-dot.show{display:block;}
+#rec-txt {
+  position:absolute; top:11px; left:30px;
+  font-family:var(--mono); font-size:10px;
+  color:var(--red); display:none; z-index:10;
+  letter-spacing:2px;
+}
+#rec-txt.show{display:block;}
+
+/* Corner info overlays */
+#lut-corner {
+  position:absolute; top:10px; right:72px;
+  background:rgba(0,0,0,.6); border:1px solid rgba(255,255,255,.12);
+  backdrop-filter:blur(4px);
+  padding:3px 8px; border-radius:3px;
+  font-family:var(--mono); font-size:10px;
+  color:var(--accent); letter-spacing:1px; z-index:10;
+}
+#res-corner {
+  position:absolute; top:10px; left:50%;
+  transform:translateX(-50%);
+  background:rgba(0,0,0,.5);
+  padding:2px 8px; border-radius:3px;
+  font-family:var(--mono); font-size:9px;
+  color:var(--teal); letter-spacing:2px; z-index:10;
+  display:none;
+}
+#res-corner.show{display:block;}
+
+#zoom-display {
+  position:absolute; bottom:14px; left:50%;
+  transform:translateX(-50%);
+  font-family:var(--mono); font-size:20px;
+  color:#fff; text-shadow:0 1px 8px rgba(0,0,0,.9);
+  pointer-events:none; z-index:10;
+  letter-spacing:2px;
+}
+
+/* NO CAMERA */
+#no-camera {
+  position:absolute; inset:0;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  gap:14px; z-index:20;
+  background: radial-gradient(ellipse at center, #0d1118 0%, #050608 100%);
+}
+.nc-logo {
+  font-family:var(--mono);
+  font-size:28px; font-weight:900;
+  color:var(--accent);
+  letter-spacing:6px;
+  text-shadow:var(--glow-gold);
+}
+.nc-sub { font-size:12px; color:var(--text-dim); letter-spacing:2px; }
+#nc-btn {
+  background: linear-gradient(135deg,var(--accent),var(--gold));
+  color:#000; border:none; border-radius:8px;
+  padding:12px 30px;
+  font-family:var(--mono); font-size:12px;
+  font-weight:700; cursor:pointer; letter-spacing:2px;
+  box-shadow:var(--glow-gold);
+  transition:all .2s;
+}
+#nc-btn:hover { transform:scale(1.03); }
+
+/* ═══ ZOOM STRIP ═════════════════════════════════════════ */
+#zoom-strip {
+  position:absolute; right:12px; top:50%;
+  transform:translateY(-50%);
+  display:flex; flex-direction:column;
+  gap:6px; z-index:10;
+}
+.zb {
+  background:rgba(5,6,8,.7);
+  border:1px solid rgba(255,255,255,.1);
+  border-radius:50%;
+  width:48px; height:48px;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  cursor:pointer; color:#fff;
+  font-family:var(--mono); font-size:11px;
+  backdrop-filter:blur(6px);
+  transition:all .15s;
+}
+.zb:hover { border-color:var(--accent); }
+.zb.active {
+  background: rgba(200,169,110,.15);
+  border-color:var(--accent2);
+  box-shadow:var(--glow-gold);
+}
+.zb .zn { font-size:12px; font-weight:700; }
+.zb .zm { font-size:8px; color:var(--text-dim); margin-top:1px; }
+.zb.active .zm { color:var(--accent); }
+
+/* ═══ SCOPES PANEL ═══════════════════════════════════════ */
+#scopes {
+  width:0;
+  background:var(--panel);
+  border-left:1px solid var(--border);
+  overflow:hidden;
+  transition:width .25s;
+  flex-shrink:0;
+  display:flex;
+  flex-direction:column;
+  gap:1px;
+}
+#scopes.open { width:120px; }
+.scope-box {
+  flex:1;
+  background:var(--bg);
+  position:relative;
+  overflow:hidden;
+}
+.scope-label {
+  position:absolute; top:4px; left:6px;
+  font-family:var(--mono); font-size:8px;
+  color:var(--text-dim); letter-spacing:1px;
+  z-index:2;
+}
+.scope-canvas { width:100%; height:100%; display:block; }
+
+/* ═══ RIGHT SIDEBAR ══════════════════════════════════════ */
+#sidebar {
+  width:58px;
+  background: linear-gradient(180deg, #0c0e13 0%, #080a0e 100%);
+  border-left:1px solid var(--border);
+  display:flex; flex-direction:column;
+  align-items:center;
+  padding:6px 0;
+  gap:4px;
+  flex-shrink:0;
+  z-index:20;
+}
+
+.sb-btn {
+  width:42px; height:42px;
+  border-radius:8px;
+  border:1px solid var(--border2);
+  background:var(--panel2);
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  cursor:pointer; color:var(--text-mid);
+  gap:2px; transition:all .15s;
+  user-select:none; flex-shrink:0;
+}
+.sb-btn:hover { border-color:var(--accent); color:var(--accent2); }
+.sb-btn.active {
+  background: linear-gradient(135deg,rgba(200,169,110,.2),rgba(200,169,110,.05));
+  border-color:var(--accent);
+  color:var(--accent2);
+  box-shadow:var(--glow-gold);
+}
+.sb-btn svg { width:16px; height:16px; }
+.sb-btn .bl { font-family:var(--ui); font-size:7px; font-weight:700; letter-spacing:.5px; }
+
+#rec-btn {
+  width:52px; height:52px;
+  border-radius:50%;
+  border:2px solid rgba(255,255,255,.2);
+  background:transparent;
+  cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  transition:all .2s; flex-shrink:0;
+  position:relative;
+}
+#rec-btn::before {
+  content:'';
+  position:absolute; inset:-4px;
+  border-radius:50%;
+  border:1px solid rgba(255,36,64,.2);
+  transition:all .2s;
+}
+#rec-btn:hover::before { border-color:rgba(255,36,64,.5); inset:-6px; }
+#rec-btn.recording { border-color:var(--red); box-shadow:var(--glow-red); }
+#rec-btn.recording::before { border-color:var(--red); animation:pulse-ring 1.5s ease infinite; }
+@keyframes pulse-ring {
+  0%{inset:-4px;opacity:.8} 100%{inset:-14px;opacity:0}
+}
+#rec-inner {
+  width:32px; height:32px;
+  border-radius:50%;
+  background: radial-gradient(circle, #ff4060 0%, var(--red2) 100%);
+  transition:all .2s;
+  box-shadow:0 0 8px rgba(255,36,64,.4);
+}
+#rec-btn.recording #rec-inner {
+  border-radius:5px;
+  width:18px; height:18px;
+}
+
+.sb-sp { flex:1; }
+
+/* ═══ BOTTOM BAR ══════════════════════════════════════════ */
+#bottombar {
+  background: linear-gradient(0deg, #0a0c10 0%, #0c0f14 100%);
+  border-top:1px solid var(--border2);
+  height:62px;
+  display:flex; align-items:center;
+  padding:0 10px; gap:8px;
+  flex-shrink:0; z-index:30;
+  position:relative;
+}
+#bottombar::before {
+  content:'';
+  position:absolute; top:0; left:0; right:0; height:1px;
+  background:linear-gradient(90deg,transparent,var(--accent),transparent);
+  opacity:.3;
+}
+
+/* Waveform */
+#waveform-canvas {
+  width:88px; height:46px;
+  border:1px solid var(--border2);
+  border-radius:3px; flex-shrink:0;
+  background:#000;
+}
+
+/* Storage */
+.stor {
+  display:flex; flex-direction:column;
+  gap:3px; flex-shrink:0; min-width:100px;
+}
+.stor-row {
+  display:flex; justify-content:space-between;
+  font-family:var(--mono); font-size:9px;
+  color:var(--text-dim);
+}
+.stor-row span:last-child { color:var(--accent); }
+.stor-bar { height:3px; background:var(--border); border-radius:2px; overflow:hidden; }
+.stor-fill {
+  height:100%;
+  background:linear-gradient(90deg,var(--teal),var(--cyan));
+  width:42%; border-radius:2px;
+  transition:width .5s;
+}
+
+/* Audio meters */
+#meters {
+  flex:1; display:flex; flex-direction:column; gap:4px;
+}
+.mt-row { display:flex; align-items:center; gap:4px; }
+.mt-lbl { font-family:var(--mono); font-size:8px; color:var(--text-dim); width:7px; }
+.mt-bar {
+  flex:1; height:7px;
+  background:var(--border); border-radius:1px;
+  overflow:hidden; position:relative;
+}
+.mt-fill {
+  height:100%;
+  background:linear-gradient(90deg,var(--green) 0%,var(--green) 55%,#a0d020 72%,var(--amber) 84%,var(--red) 100%);
+  width:0%; transition:width .04s;
+  border-radius:1px;
+}
+.mt-scale {
+  display:flex; justify-content:space-between;
+  padding:0 1px;
+}
+.mt-scale span { font-family:var(--mono); font-size:7px; color:var(--text-dim); }
+
+/* Bottom info */
+.b-info {
+  display:flex; flex-direction:column; gap:3px;
+  align-items:flex-end; flex-shrink:0;
+}
+.b-info div {
+  font-family:var(--mono); font-size:9px;
+  color:var(--text-dim); letter-spacing:.5px;
+}
+.b-info .b-tc { color:var(--text-mid); font-size:10px; }
+
+/* ═══ PANELS (fullscreen overlays) ══════════════════════ */
+.panel-overlay {
+  position:fixed; inset:0;
+  background:rgba(0,0,0,.85);
+  z-index:100; display:none;
+  align-items:center; justify-content:center;
+  backdrop-filter:blur(10px);
+}
+.panel-overlay.show { display:flex; }
+
+.panel-card {
+  background: linear-gradient(160deg,#0f1218,#090b0f);
+  border:1px solid var(--border2);
+  border-radius:16px;
+  width:min(460px,94vw);
+  max-height:85vh;
+  overflow-y:auto;
+  padding:0;
+}
+.panel-card::-webkit-scrollbar { width:4px; }
+.panel-card::-webkit-scrollbar-track { background:transparent; }
+.panel-card::-webkit-scrollbar-thumb { background:var(--border2); border-radius:2px; }
+
+.ph {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:18px 20px 14px;
+  border-bottom:1px solid var(--border);
+  position:sticky; top:0;
+  background: linear-gradient(160deg,#0f1218,#0a0c10);
+  z-index:2;
+}
+.ph h2 {
+  font-family:var(--mono); font-size:14px;
+  font-weight:700; letter-spacing:3px;
+  color:var(--accent2);
+}
+.ph-close {
+  background:none; border:none; cursor:pointer;
+  color:var(--text-dim); font-size:18px;
+  width:30px; height:30px; display:flex;
+  align-items:center; justify-content:center;
+  border-radius:6px; transition:all .15s;
+}
+.ph-close:hover { background:var(--panel3); color:var(--text); }
+
+.panel-body { padding:16px 20px 20px; }
+
+.sg { margin-bottom:18px; }
+.sg-title {
+  font-size:10px; font-weight:700;
+  letter-spacing:2px; text-transform:uppercase;
+  color:var(--teal); margin-bottom:10px;
+  padding-bottom:6px;
+  border-bottom:1px solid rgba(0,229,200,.15);
+  display:flex; align-items:center; gap:8px;
+}
+.sg-title::before {
+  content:''; width:3px; height:12px;
+  background:var(--teal); border-radius:2px;
+}
+.sr {
+  display:flex; align-items:center;
+  justify-content:space-between;
+  padding:8px 0;
+  border-bottom:1px solid rgba(255,255,255,.03);
+}
+.sr label { font-size:13px; color:var(--text-mid); font-weight:500; }
+.sr .sr-val { font-family:var(--mono); font-size:11px; color:var(--accent); }
+
+.tog {
+  width:38px; height:21px;
+  background:var(--border2); border-radius:11px;
+  cursor:pointer; position:relative; transition:background .2s;
+  flex-shrink:0;
+}
+.tog.on { background:var(--teal); }
+.tog::after {
+  content:''; position:absolute;
+  width:17px; height:17px;
+  background:#fff; border-radius:50%;
+  top:2px; left:2px; transition:left .2s;
+  box-shadow:0 1px 4px rgba(0,0,0,.5);
+}
+.tog.on::after { left:19px; }
+
+.sel-input {
+  background:var(--panel3); border:1px solid var(--border2);
+  color:var(--text); padding:5px 10px;
+  border-radius:6px; font-family:var(--ui); font-size:13px;
+  cursor:pointer; outline:none; transition:border .15s;
+}
+.sel-input:focus { border-color:var(--accent); }
+.sel-input option { background:var(--panel3); }
+
+.range-wrap { display:flex; align-items:center; gap:8px; flex:1; margin-left:10px; }
+.range-wrap input[type=range] {
+  flex:1; height:3px;
+  -webkit-appearance:none;
+  background: linear-gradient(90deg,var(--accent) 0%,var(--border2) 0%);
+  border-radius:2px; outline:none; cursor:pointer;
+}
+.range-wrap input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance:none;
+  width:14px; height:14px;
+  border-radius:50%;
+  background:var(--accent2);
+  box-shadow:0 0 6px rgba(200,169,110,.5);
+}
+.range-val { font-family:var(--mono); font-size:11px; color:var(--accent); min-width:28px; text-align:right; }
+
+/* LUT GRID */
+.lut-grid {
+  display:grid; grid-template-columns:repeat(3,1fr);
+  gap:8px; margin-top:4px;
+}
+.lut-card {
+  border-radius:8px; overflow:hidden;
+  cursor:pointer; border:2px solid transparent;
+  transition:all .15s;
+}
+.lut-card:hover { border-color:var(--accent); transform:scale(1.02); }
+.lut-card.active { border-color:var(--accent2); box-shadow:var(--glow-gold); }
+.lut-preview {
+  height:40px;
+  display:flex;
+}
+.lut-preview div { flex:1; }
+.lut-name {
+  background:var(--panel3);
+  padding:4px 6px;
+  font-family:var(--mono); font-size:9px;
+  color:var(--text-mid); letter-spacing:1px;
+  text-align:center;
+}
+.lut-card.active .lut-name { color:var(--accent2); }
+
+/* THEME GRID */
+.theme-grid {
+  display:grid; grid-template-columns:repeat(5,1fr);
+  gap:6px; margin-top:4px;
+}
+.theme-dot {
+  height:36px; border-radius:8px;
+  cursor:pointer; border:2px solid transparent;
+  display:flex; align-items:center; justify-content:center;
+  font-family:var(--mono); font-size:8px;
+  font-weight:700; letter-spacing:.5px;
+  transition:all .15s;
+}
+.theme-dot:hover { transform:scale(1.05); }
+.theme-dot.active { border-color:#fff; }
+
+/* MEDIA PANEL */
+#media-panel { position:fixed; inset:0; background:rgba(0,0,0,.92); z-index:100; display:none; flex-direction:column; backdrop-filter:blur(10px); }
+#media-panel.show { display:flex; }
+#media-grid { flex:1; display:grid; grid-template-columns:repeat(3,1fr); gap:2px; padding:8px; overflow-y:auto; }
+.media-card { aspect-ratio:16/9; background:var(--panel2); border-radius:5px; cursor:pointer; position:relative; overflow:hidden; border:1px solid var(--border); transition:all .15s; }
+.media-card:hover { border-color:var(--accent); }
+.media-card video { width:100%; height:100%; object-fit:cover; }
+.media-card .play { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.3); font-size:22px; opacity:0; transition:opacity .15s; }
+.media-card:hover .play { opacity:1; }
+.media-card .dur { position:absolute; bottom:4px; right:6px; font-family:var(--mono); font-size:9px; color:#fff; background:rgba(0,0,0,.6); padding:1px 5px; border-radius:2px; }
+.media-card .clip-res { position:absolute; top:4px; left:5px; font-family:var(--mono); font-size:8px; color:var(--accent); background:rgba(0,0,0,.6); padding:1px 4px; border-radius:2px; }
+#no-clips-msg { grid-column:1/-1; text-align:center; padding:60px 20px; color:var(--text-dim); }
+#no-clips-msg .ic { font-size:42px; opacity:.2; margin-bottom:10px; }
+
+/* TOAST */
+#toast {
+  position:fixed; bottom:76px; left:50%;
+  transform:translateX(-50%) translateY(16px);
+  background: linear-gradient(135deg,rgba(200,169,110,.95),rgba(160,130,70,.95));
+  color:#000; padding:7px 18px; border-radius:20px;
+  font-family:var(--mono); font-size:10px; font-weight:700;
+  letter-spacing:1px; opacity:0;
+  transition:all .25s; pointer-events:none; z-index:200;
+  white-space:nowrap; box-shadow:var(--glow-gold);
+}
+#toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+/* CINEMATIC FILTER CLASSES */
+.lut-off     { filter:none; }
+.lut-rec709  { filter:none; }
+.lut-log     { filter:contrast(.78) brightness(1.15) saturate(.65); }
+.lut-slog3   { filter:contrast(.72) brightness(1.2) saturate(.55) sepia(.08); }
+.lut-arri    { filter:contrast(.88) brightness(1.05) saturate(.9) hue-rotate(-3deg); }
+.lut-orange  { filter:contrast(1.05) saturate(1.15) sepia(.25) hue-rotate(-10deg) brightness(1.02); }
+.lut-teal    { filter:contrast(1.08) saturate(1.1) hue-rotate(15deg) brightness(.98); }
+.lut-kodak   { filter:contrast(1.12) saturate(1.25) sepia(.15) brightness(1.03) hue-rotate(-5deg); }
+.lut-fuji    { filter:contrast(.95) saturate(1.3) hue-rotate(8deg) brightness(1.05); }
+.lut-noir    { filter:grayscale(1) contrast(1.2) brightness(.95); }
+.lut-bleach  { filter:contrast(1.1) saturate(.7) brightness(1.08) sepia(.2); }
+.lut-matrix  { filter:hue-rotate(90deg) saturate(1.2) contrast(1.05); }
+
+/* Smooth transitions */
+.param, .sb-btn, .zb, .lut-card, .theme-dot { -webkit-tap-highlight-color:transparent; }
+
+/* Scrollbar global */
+::-webkit-scrollbar { width:4px; height:4px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--border2); border-radius:2px; }
+
+@media(max-width:480px){
+  #topbar { padding:0 3px; gap:1px; }
+  .param { min-width:44px; padding:3px 5px; }
+  .param-value { font-size:11px; }
+  .param-label { font-size:8px; }
+  #timecode { font-size:13px; letter-spacing:2px; }
+  #sidebar { width:52px; }
+  .sb-btn { width:38px; height:38px; }
+  #rec-btn { width:46px; height:46px; }
+  #rec-inner { width:28px; height:28px; }
+  .zb { width:42px; height:42px; }
+  #scopes.open { width:90px; }
+}
+</style>
+</head>
+<body class="theme-cinema">
+
+<!-- ═══ TOP BAR ═══════════════════════════════════════ -->
+<div id="topbar">
+  <div class="param sel" onclick="showToast('📐 LENS — 23mm Prime')">
+    <div class="param-label">LENS</div>
+    <div class="param-value gold" id="lens-val">23mm</div>
+  </div>
+  <div class="vsep"></div>
+  <div class="param" onclick="openPanel('settings-panel')">
+    <div class="param-label">FPS</div>
+    <div class="param-value teal" id="fps-val">60</div>
+  </div>
+  <div class="vsep"></div>
+  <div class="param" onclick="openPanel('settings-panel')">
+    <div class="param-label">SHUTTER<span class="auto-badge">A</span></div>
+    <div class="param-value" id="shutter-val">1/100</div>
+  </div>
+  <div class="vsep"></div>
+  <div class="param" onclick="openPanel('settings-panel')">
+    <div class="param-label">IRIS</div>
+    <div class="param-value dim" id="iris-val">f1.8</div>
+  </div>
+
+  <div id="tc-wrap">
+    <div id="timecode">00:00:00:00</div>
+    <div id="quality-badge">8K · RAW · LOG</div>
+  </div>
+
+  <div class="param" onclick="openPanel('settings-panel')">
+    <div class="param-label">ISO<span class="auto-badge">A</span></div>
+    <div class="param-value" id="iso-val">6400</div>
+  </div>
+  <div class="vsep"></div>
+  <div class="param" onclick="openPanel('settings-panel')">
+    <div class="param-label">WB</div>
+    <div class="param-value" id="wb-val">6500K</div>
+  </div>
+  <div class="vsep"></div>
+  <div class="param" onclick="openPanel('settings-panel')">
+    <div class="param-label">TINT</div>
+    <div class="param-value" id="tint-val">+0</div>
+  </div>
+  <div class="vsep"></div>
+  <div class="param" onclick="openPanel('settings-panel')">
+    <div class="param-label">ND</div>
+    <div class="param-value dim" id="nd-val">CLEAR</div>
+  </div>
+</div>
+
+<!-- ═══ MAIN ════════════════════════════════════════════ -->
+<div id="main">
+
+  <!-- VIEWPORT -->
+  <div id="viewport">
+    <video id="camera-feed" autoplay muted playsinline></video>
+    <div id="cin-top"></div>
+    <div id="cin-bot"></div>
+
+    <svg id="grid-svg" width="100%" height="100%">
+      <!-- Rule of thirds -->
+      <line x1="33.3%" y1="0" x2="33.3%" y2="100%"/>
+      <line x1="66.6%" y1="0" x2="66.6%" y2="100%"/>
+      <line x1="0" y1="33.3%" x2="100%" y2="33.3%"/>
+      <line x1="0" y1="66.6%" x2="100%" y2="66.6%"/>
+      <!-- Diagonal guides -->
+      <line x1="0" y1="0" x2="100%" y2="100%" stroke-dasharray="4 8"/>
+      <line x1="100%" y1="0" x2="0" y2="100%" stroke-dasharray="4 8"/>
+      <!-- Center crosshair -->
+      <line x1="50%" y1="45%" x2="50%" y2="55%"/>
+      <line x1="45%" y1="50%" x2="55%" y2="50%"/>
+      <!-- Golden ratio circle -->
+      <circle cx="50%" cy="50%" r="20%"/>
+    </svg>
+
+    <div id="safe-zones">
+      <div class="safe-rect" style="inset:10%;"></div>
+      <div class="safe-rect" style="inset:5%;opacity:.5;"></div>
+    </div>
+
+    <div id="focus-box" class="show">
+      <div class="fb2" style="position:absolute;inset:0;"></div>
+    </div>
+
+    <canvas id="zebra-canvas"></canvas>
+    <canvas id="fc-canvas"></canvas>
+
+    <div id="rec-dot"></div>
+    <div id="rec-txt">● REC</div>
+
+    <div id="lut-corner">Rec.709</div>
+    <div id="res-corner">8K · UHD</div>
+
+    <div id="no-camera">
+      <div class="nc-logo">CINEOS</div>
+      <div class="nc-sub">PROFESSIONAL CINEMA CAMERA</div>
+      <div style="font-size:11px;color:var(--text-dim);margin-top:4px;">Camera access required</div>
+      <button id="nc-btn" onclick="startCamera()">ENABLE CAMERA</button>
+      <div style="font-size:10px;color:var(--text-dim);margin-top:8px;letter-spacing:1px;">ALLOW ACCESS WHEN PROMPTED</div>
+    </div>
+
+    <!-- Zoom strip -->
+    <div id="zoom-strip">
+      <div class="zb" onclick="setZoom(.5,'13mm')"><span class="zn">.5x</span><span class="zm">13mm</span></div>
+      <div class="zb" onclick="setZoom(.7,'16mm')"><span class="zn">.7x</span><span class="zm">16mm</span></div>
+      <div class="zb active" onclick="setZoom(1,'23mm')"><span class="zn">1x</span><span class="zm">23mm</span></div>
+      <div class="zb" onclick="setZoom(1.5,'35mm')"><span class="zn">1.5x</span><span class="zm">35mm</span></div>
+      <div class="zb" onclick="setZoom(2,'46mm')"><span class="zn">2x</span><span class="zm">46mm</span></div>
+      <div class="zb" onclick="setZoom(3,'70mm')"><span class="zn">3x</span><span class="zm">70mm</span></div>
+      <div class="zb" onclick="setZoom(5,'115mm')"><span class="zn">5x</span><span class="zm">115mm</span></div>
+    </div>
+
+    <div id="zoom-display">1x</div>
+  </div>
+
+  <!-- SCOPES PANEL -->
+  <div id="scopes">
+    <div class="scope-box">
+      <div class="scope-label">WAVEFORM</div>
+      <canvas class="scope-canvas" id="wv-canvas"></canvas>
+    </div>
+    <div class="scope-box">
+      <div class="scope-label">VECTORSCOPE</div>
+      <canvas class="scope-canvas" id="vs-canvas"></canvas>
+    </div>
+    <div class="scope-box">
+      <div class="scope-label">HISTOGRAM</div>
+      <canvas class="scope-canvas" id="hs-canvas"></canvas>
+    </div>
+  </div>
+
+  <!-- RIGHT SIDEBAR -->
+  <div id="sidebar">
+    <!-- Switch camera -->
+    <div class="sb-btn" onclick="switchCamera()" title="Switch Camera">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <path d="M20 7h-3.2L15 4H9L7.2 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/>
+        <circle cx="12" cy="13" r="3"/>
+      </svg>
+    </div>
+
+    <!-- RECORD -->
+    <div id="rec-btn" onclick="toggleRecord()"><div id="rec-inner"></div></div>
+
+    <!-- Grid -->
+    <div class="sb-btn" id="grid-btn" onclick="toggleGrid()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <rect x="3" y="3" width="18" height="18" rx="1"/>
+        <line x1="9" y1="3" x2="9" y2="21"/>
+        <line x1="15" y1="3" x2="15" y2="21"/>
+        <line x1="3" y1="9" x2="21" y2="9"/>
+        <line x1="3" y1="15" x2="21" y2="15"/>
+      </svg>
+    </div>
+
+    <!-- Safe zones -->
+    <div class="sb-btn" id="safe-btn" onclick="toggleSafe()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <rect x="4" y="4" width="16" height="16" rx="1"/>
+        <rect x="7" y="7" width="10" height="10" rx="1"/>
+      </svg>
+    </div>
+
+    <!-- Scopes -->
+    <div class="sb-btn" id="scope-btn" onclick="toggleScopes()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <polyline points="3,17 7,11 11,14 15,8 21,13"/>
+        <line x1="3" y1="20" x2="21" y2="20"/>
+      </svg>
+      <span class="bl">SCOPE</span>
+    </div>
+
+    <!-- Focus peaking -->
+    <div class="sb-btn" id="focus-btn" onclick="toggleFocus()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>
+      </svg>
+      <span class="bl">PEAK</span>
+    </div>
+
+    <!-- Zebra -->
+    <div class="sb-btn" id="zebra-btn" onclick="toggleZebra()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <rect x="3" y="3" width="18" height="18" rx="2"/>
+        <line x1="3" y1="9" x2="21" y2="9"/>
+        <line x1="3" y1="15" x2="21" y2="15"/>
+      </svg>
+      <span class="bl">ZEBRA</span>
+    </div>
+
+    <!-- Cinemascope bars -->
+    <div class="sb-btn" id="cin-btn" onclick="toggleCinemascope()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <rect x="2" y="2" width="20" height="4" rx="1" fill="currentColor" opacity=".5"/>
+        <rect x="2" y="18" width="20" height="4" rx="1" fill="currentColor" opacity=".5"/>
+        <rect x="2" y="6" width="20" height="12" rx="0"/>
+      </svg>
+      <span class="bl">2.39:1</span>
+    </div>
+
+    <div class="sb-sp"></div>
+
+    <!-- LUT -->
+    <div class="sb-btn" id="lut-btn" onclick="openPanel('lut-panel')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <circle cx="8" cy="12" r="3"/><circle cx="16" cy="8" r="3"/><circle cx="16" cy="16" r="3"/>
+        <line x1="11" y1="12" x2="13" y2="9"/><line x1="11" y1="12" x2="13" y2="15"/>
+      </svg>
+      <span class="bl" id="lut-lbl">LUT</span>
+    </div>
+
+    <!-- Media -->
+    <div class="sb-btn" onclick="openPanel('media-panel')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <rect x="2" y="5" width="20" height="14" rx="2"/>
+        <polygon points="10,9 16,12 10,15" fill="currentColor" stroke="none"/>
+      </svg>
+      <span class="bl">CLIPS</span>
+    </div>
+
+    <!-- Settings -->
+    <div class="sb-btn" onclick="openPanel('settings-panel')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      </svg>
+      <span class="bl">SET</span>
+    </div>
+  </div>
+
+</div><!-- end main -->
+
+<!-- ═══ BOTTOM BAR ════════════════════════════════════ -->
+<div id="bottombar">
+  <canvas id="waveform-canvas" width="88" height="46"></canvas>
+
+  <div class="stor">
+    <div class="stor-row"><span>4:21:58</span><span>142 GB</span></div>
+    <div class="stor-bar"><div class="stor-fill"></div></div>
+    <div class="stor-row" style="justify-content:center;"><span>SSD · 58% USED</span></div>
+  </div>
+
+  <div id="meters">
+    <div class="mt-row">
+      <span class="mt-lbl">L</span>
+      <div class="mt-bar"><div class="mt-fill" id="m1"></div></div>
+    </div>
+    <div class="mt-row">
+      <span class="mt-lbl">R</span>
+      <div class="mt-bar"><div class="mt-fill" id="m2"></div></div>
+    </div>
+    <div class="mt-scale">
+      <span>-60</span><span>-40</span><span>-20</span><span>-12</span><span>-6</span><span>-3</span><span>0</span>
+    </div>
+  </div>
+
+  <div class="b-info">
+    <div class="b-tc" id="b-tc">00:00:00</div>
+    <div id="b-res">8K UHD</div>
+    <div id="b-codec">ProRes RAW</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- SETTINGS PANEL -->
+<div class="panel-overlay" id="settings-panel">
+  <div class="panel-card">
+    <div class="ph">
+      <h2>⚙ SETTINGS</h2>
+      <button class="ph-close" onclick="closePanel('settings-panel')">✕</button>
+    </div>
+    <div class="panel-body">
+
+      <div class="sg">
+        <div class="sg-title">Resolution & Quality</div>
+        <div class="sr">
+          <label>Resolution</label>
+          <select class="sel-input" onchange="setResolution(this.value)">
+            <option value="8K">8K UHD (7680×4320)</option>
+            <option value="6K">6K (6144×3456)</option>
+            <option value="4K">4K UHD (3840×2160)</option>
+            <option value="2K">2K (2048×1080)</option>
+            <option value="1080p">1080p FHD</option>
+            <option value="720p">720p HD</option>
+          </select>
+        </div>
+        <div class="sr">
+          <label>Codec</label>
+          <select class="sel-input" onchange="setCodec(this.value)">
+            <option>ProRes RAW HQ</option>
+            <option>ProRes RAW</option>
+            <option>ProRes 4444</option>
+            <option>ProRes 422 HQ</option>
+            <option>H.265 HEVC</option>
+            <option>H.264 AVC</option>
+            <option>BRAW 5:1</option>
+            <option>BRAW 3:1</option>
+          </select>
+        </div>
+        <div class="sr">
+          <label>Frame Rate</label>
+          <select class="sel-input" onchange="setFPS(this.value)">
+            <option>23.976</option>
+            <option>24</option>
+            <option>25</option>
+            <option>29.97</option>
+            <option>30</option>
+            <option>48</option>
+            <option>50</option>
+            <option>59.94</option>
+            <option value="60" selected>60</option>
+            <option>120</option>
+            <option>240</option>
+          </select>
+        </div>
+        <div class="sr">
+          <label>Dynamic Range</label>
+          <select class="sel-input">
+            <option>16+ Stops (Max)</option>
+            <option>14 Stops</option>
+            <option>12 Stops</option>
+            <option>Standard</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="sg">
+        <div class="sg-title">Exposure</div>
+        <div class="sr">
+          <label>ISO</label>
+          <select class="sel-input" onchange="document.getElementById('iso-val').textContent=this.value">
+            <option>100</option><option>200</option><option>400</option>
+            <option>800</option><option>1600</option><option>3200</option>
+            <option value="6400" selected>6400</option><option>12800</option><option>25600</option>
+          </select>
+        </div>
+        <div class="sr">
+          <label>Shutter Angle</label>
+          <select class="sel-input" onchange="setShutter(this.value)">
+            <option>45°</option><option>90°</option>
+            <option value="180" selected>180°</option>
+            <option>270°</option><option>360°</option>
+          </select>
+        </div>
+        <div class="sr">
+          <label>ND Filter</label>
+          <select class="sel-input" onchange="document.getElementById('nd-val').textContent=this.value">
+            <option value="CLEAR">Clear</option>
+            <option>ND 0.3 (2 stop)</option>
+            <option>ND 0.6 (4 stop)</option>
+            <option>ND 0.9 (8 stop)</option>
+            <option>ND 1.2 (16 stop)</option>
+          </select>
+        </div>
+        <div class="sr">
+          <label>Exposure Offset</label>
+          <div class="range-wrap">
+            <input type="range" min="-3" max="3" step=".1" value="0"
+              oninput="this.nextElementSibling.textContent=parseFloat(this.value).toFixed(1);updateRange(this)">
+            <span class="range-val">0.0</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="sg">
+        <div class="sg-title">White Balance</div>
+        <div class="sr">
+          <label>Color Temp</label>
+          <select class="sel-input" onchange="document.getElementById('wb-val').textContent=this.value+'K'">
+            <option>2800</option><option>3200</option><option>4500</option>
+            <option>5500</option><option value="6500" selected>6500</option>
+            <option>7500</option><option>9000</option>
+          </select>
+        </div>
+        <div class="sr">
+          <label>Tint</label>
+          <div class="range-wrap">
+            <input type="range" min="-50" max="50" step="1" value="0"
+              oninput="document.getElementById('tint-val').textContent=(this.value>0?'+':'')+this.value;updateRange(this)">
+            <span class="range-val">0</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="sg">
+        <div class="sg-title">Audio</div>
+        <div class="sr">
+          <label>Sample Rate</label>
+          <select class="sel-input">
+            <option>48 kHz</option><option>96 kHz</option><option>192 kHz</option>
+          </select>
+        </div>
+        <div class="sr">
+          <label>Bit Depth</label>
+          <select class="sel-input">
+            <option>16-bit</option><option selected>24-bit</option><option>32-bit Float</option>
+          </select>
+        </div>
+        <div class="sr">
+          <label>Gain Ch.1</label>
+          <div class="range-wrap">
+            <input type="range" min="-20" max="20" step="1" value="0"
+              oninput="this.nextElementSibling.textContent=this.value+'dB';updateRange(this)">
+            <span class="range-val">0dB</span>
+          </div>
+        </div>
+        <div class="sr"><label>Wind Filter</label><div class="tog on" onclick="this.classList.toggle('on')"></div></div>
+        <div class="sr"><label>Phantom Power</label><div class="tog" onclick="this.classList.toggle('on')"></div></div>
+      </div>
+
+      <div class="sg">
+        <div class="sg-title">Display & Overlays</div>
+        <div class="sr"><label>Grid Overlay</label><div class="tog" id="set-grid" onclick="toggleGrid();this.classList.toggle('on')"></div></div>
+        <div class="sr"><label>Safe Zones</label><div class="tog" onclick="toggleSafe();this.classList.toggle('on')"></div></div>
+        <div class="sr"><label>Focus Peaking</label><div class="tog on" onclick="toggleFocus();this.classList.toggle('on')"></div></div>
+        <div class="sr"><label>Zebra (100 IRE)</label><div class="tog" onclick="toggleZebra();this.classList.toggle('on')"></div></div>
+        <div class="sr"><label>Scopes Panel</label><div class="tog" onclick="toggleScopes();this.classList.toggle('on')"></div></div>
+        <div class="sr"><label>Cinemascope Bars</label><div class="tog" onclick="toggleCinemascope();this.classList.toggle('on')"></div></div>
+        <div class="sr"><label>Show Resolution</label><div class="tog on" onclick="document.getElementById('res-corner').classList.toggle('show')"></div></div>
+      </div>
+
+      <div class="sg">
+        <div class="sg-title">UI Theme</div>
+        <div class="theme-grid">
+          <div class="theme-dot active" style="background:linear-gradient(135deg,#c8a96e,#3a2a10);color:#c8a96e;" onclick="setTheme('cinema',this)">CINEMA</div>
+          <div class="theme-dot" style="background:linear-gradient(135deg,#ff6b00,#3a1a00);color:#ff6b00;" onclick="setTheme('arri',this)">ARRI</div>
+          <div class="theme-dot" style="background:linear-gradient(135deg,#ff2440,#3a0010);color:#ff2440;" onclick="setTheme('red',this)">RED</div>
+          <div class="theme-dot" style="background:linear-gradient(135deg,#a855f7,#2a0a3a);color:#a855f7;" onclick="setTheme('venice',this)">VENICE</div>
+          <div class="theme-dot" style="background:linear-gradient(135deg,#00e5c8,#002a25);color:#00e5c8;" onclick="setTheme('alexa',this)">ALEXA</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- LUT PANEL -->
+<div class="panel-overlay" id="lut-panel">
+  <div class="panel-card">
+    <div class="ph">
+      <h2>🎨 COLOR PROFILES</h2>
+      <button class="ph-close" onclick="closePanel('lut-panel')">✕</button>
+    </div>
+    <div class="panel-body">
+      <div class="sg">
+        <div class="sg-title">Camera Native</div>
+        <div class="lut-grid">
+          <div class="lut-card active" onclick="applyLUT('lut-rec709','Rec.709',this)">
+            <div class="lut-preview"><div style="background:linear-gradient(90deg,#1a1a2e,#4a90d9,#e8e8e8)"></div></div>
+            <div class="lut-name">Rec.709</div>
+          </div>
+          <div class="lut-card" onclick="applyLUT('lut-log','S-Log3',this)">
+            <div class="lut-preview"><div style="background:linear-gradient(90deg,#2a2a2a,#888,#bbb)"></div></div>
+            <div class="lut-name">S-Log3</div>
+          </div>
+          <div class="lut-card" onclick="applyLUT('lut-slog3','V-Log L',this)">
+            <div class="lut-preview"><div style="background:linear-gradient(90deg,#222,#777,#ccc)"></div></div>
+            <div class="lut-name">V-Log L</div>
+          </div>
+        </div>
+      </div>
+      <div class="sg">
+        <div class="sg-title">Cinematic Looks</div>
+        <div class="lut-grid">
+          <div class="lut-card" onclick="applyLUT('lut-orange','Orange &amp; Teal',this)">
+            <div class="lut-preview">
+              <div style="background:linear-gradient(90deg,#1a3a4a,#2a5a6a)"></div>
+              <div style="background:linear-gradient(90deg,#c84800,#ff6b00)"></div>
+            </div>
+            <div class="lut-name">Orange &amp; Teal</div>
+          </div>
+          <div class="lut-card" onclick="applyLUT('lut-teal','Teal Shadow',this)">
+            <div class="lut-preview">
+              <div style="background:linear-gradient(90deg,#003040,#005060)"></div>
+              <div style="background:linear-gradient(90deg,#e8e0d0,#fff)"></div>
+            </div>
+            <div class="lut-name">Teal Shadow</div>
+          </div>
+          <div class="lut-card" onclick="applyLUT('lut-arri','ARRI Look',this)">
+            <div class="lut-preview">
+              <div style="background:linear-gradient(90deg,#1e1e28,#505060,#d8d8c0)"></div>
+            </div>
+            <div class="lut-name">ARRI Look</div>
+          </div>
+          <div class="lut-card" onclick="applyLUT('lut-kodak','Kodak 2383',this)">
+            <div class="lut-preview">
+              <div style="background:linear-gradient(90deg,#1a1008,#604020,#e8c870)"></div>
+            </div>
+            <div class="lut-name">Kodak 2383</div>
+          </div>
+          <div class="lut-card" onclick="applyLUT('lut-fuji','Fuji 3510',this)">
+            <div class="lut-preview">
+              <div style="background:linear-gradient(90deg,#0a1820,#206080,#90c0e0)"></div>
+            </div>
+            <div class="lut-name">Fuji 3510</div>
+          </div>
+          <div class="lut-card" onclick="applyLUT('lut-bleach','Bleach Bypass',this)">
+            <div class="lut-preview">
+              <div style="background:linear-gradient(90deg,#101010,#606060,#e8e0d0)"></div>
+            </div>
+            <div class="lut-name">Bleach Bypass</div>
+          </div>
+        </div>
+      </div>
+      <div class="sg">
+        <div class="sg-title">Special Looks</div>
+        <div class="lut-grid">
+          <div class="lut-card" onclick="applyLUT('lut-noir','Noir',this)">
+            <div class="lut-preview"><div style="background:linear-gradient(90deg,#000,#555,#fff)"></div></div>
+            <div class="lut-name">Noir B&amp;W</div>
+          </div>
+          <div class="lut-card" onclick="applyLUT('lut-matrix','Cyber Green',this)">
+            <div class="lut-preview"><div style="background:linear-gradient(90deg,#001800,#003800,#00ff00)"></div></div>
+            <div class="lut-name">Cyber Green</div>
+          </div>
+          <div class="lut-card" onclick="applyLUT('lut-off','Off',this)">
+            <div class="lut-preview"><div style="background:linear-gradient(90deg,#111,#666,#eee)"></div></div>
+            <div class="lut-name">No LUT</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MEDIA PANEL -->
+<div class="panel-overlay" id="media-panel" style="display:none;">
+  <div style="width:100%;height:100%;display:flex;flex-direction:column;">
+    <div class="ph" style="background:#0a0c10;border-radius:0;position:sticky;top:0;z-index:2;">
+      <h2>🎬 CLIPS</h2>
+      <button class="ph-close" onclick="closePanel('media-panel')">✕</button>
+    </div>
+    <div id="media-grid" style="flex:1;display:grid;grid-template-columns:repeat(3,1fr);gap:2px;padding:8px;overflow-y:auto;background:#050608;">
+      <div id="no-clips-msg">
+        <div class="ic">🎬</div>
+        <div>No clips yet</div>
+        <div style="font-size:11px;margin-top:6px;color:var(--text-dim);">Record to see clips here</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+// ─── STATE ─────────────────────────────────────────────────
+const S = {
+  rec:false, grid:false, safe:false, focus:true,
+  zebra:false, scopes:false, cinemascope:false,
+  lut:'lut-rec709', facing:'environment',
+  fps:60, tcSec:0, tcInt:null,
+  stream:null, recorder:null, chunks:[], clips:[],
+  audioCtx:null, analyser:null, resolution:'8K',
+  theme:'cinema'
+};
+
+// DOM
+const video   = document.getElementById('camera-feed');
+const recBtn  = document.getElementById('rec-btn');
+const recDot  = document.getElementById('rec-dot');
+const recTxt  = document.getElementById('rec-txt');
+const tcEl    = document.getElementById('timecode');
+const zoomEl  = document.getElementById('zoom-display');
+const noCamera= document.getElementById('no-camera');
+const gridEl  = document.getElementById('grid-svg');
+const safeEl  = document.getElementById('safe-zones');
+const focusEl = document.getElementById('focus-box');
+const m1      = document.getElementById('m1');
+const m2      = document.getElementById('m2');
+const wvCanvas= document.getElementById('waveform-canvas');
+const wvCtx   = wvCanvas.getContext('2d');
+
+// Scope canvases
+const wvSc = document.getElementById('wv-canvas');
+const vsSc = document.getElementById('vs-canvas');
+const hsSc = document.getElementById('hs-canvas');
+
+// ─── CAMERA ─────────────────────────────────────────────────
+async function startCamera() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video:{facingMode:S.facing,width:{ideal:7680},height:{ideal:4320}},
+      audio:true
+    });
+    S.stream = stream;
+    video.srcObject = stream;
+    video.style.display = 'block';
+    noCamera.style.display = 'none';
+    setupAudio(stream);
+    startScopeLoop();
+    showToast('📷 CAMERA READY');
+  } catch(e) {
+    noCamera.innerHTML = `
+      <div class="nc-logo">CINEOS</div>
+      <div class="nc-sub">CAMERA ACCESS DENIED</div>
+      <div style="font-size:11px;color:var(--text-dim);margin-top:8px;">Allow camera in browser settings → reload page</div>
+    `;
+  }
+}
+
+async function switchCamera() {
+  S.facing = S.facing==='environment'?'user':'environment';
+  if(S.stream) S.stream.getTracks().forEach(t=>t.stop());
+  await startCamera();
+  showToast(S.facing==='user'?'🤳 FRONT CAMERA':'📷 REAR CAMERA');
+}
+
+// ─── RECORD ─────────────────────────────────────────────────
+function toggleRecord(){
+  if(!S.stream){startCamera();return;}
+  S.rec?stopRec():startRec();
+}
+function startRec(){
+  S.rec=true; S.chunks=[];
+  const mime=['video/webm;codecs=vp9,opus','video/webm','video/mp4'].find(m=>{try{return MediaRecorder.isTypeSupported(m)}catch{return false}})||'';
+  S.recorder = new MediaRecorder(S.stream, mime?{mimeType:mime}:{});
+  S.recorder.ondataavailable=e=>{if(e.data.size>0)S.chunks.push(e.data);};
+  S.recorder.onstop=saveClip;
+  S.recorder.start(100);
+  recBtn.classList.add('recording');
+  recDot.classList.add('show'); recTxt.classList.add('show');
+  tcEl.classList.add('rec');
+  S.tcSec=0; S.tcInt=setInterval(tickTC,1000);
+  showToast('● RECORDING STARTED');
+}
+function stopRec(){
+  S.rec=false; S.recorder.stop();
+  recBtn.classList.remove('recording');
+  recDot.classList.remove('show'); recTxt.classList.remove('show');
+  tcEl.classList.remove('rec');
+  clearInterval(S.tcInt);
+  showToast('⏹ CLIP SAVED');
+}
+function saveClip(){
+  const blob=new Blob(S.chunks,{type:'video/webm'});
+  const url=URL.createObjectURL(blob);
+  const dur=fmtDur(S.tcSec);
+  S.clips.unshift({url,dur,res:S.resolution});
+  renderMedia();
+}
+
+// ─── TIMECODE ───────────────────────────────────────────────
+function tickTC(){
+  S.tcSec++;
+  const h=String(Math.floor(S.tcSec/3600)).padStart(2,'0');
+  const m=String(Math.floor((S.tcSec%3600)/60)).padStart(2,'0');
+  const s=String(S.tcSec%60).padStart(2,'0');
+  const f=String(Math.floor(Math.random()*S.fps)).padStart(2,'0');
+  tcEl.textContent=`${h}:${m}:${s}:${f}`;
+  document.getElementById('b-tc').textContent=`${h}:${m}:${s}`;
+}
+function fmtDur(sec){
+  return `${String(Math.floor(sec/60)).padStart(2,'0')}:${String(sec%60).padStart(2,'0')}`;
+}
+setInterval(()=>{
+  if(!S.rec){
+    const n=new Date();
+    tcEl.textContent=[n.getHours(),n.getMinutes(),n.getSeconds()].map(v=>String(v).padStart(2,'0')).join(':')+':00';
+  }
+},1000);
+
+// ─── AUDIO ──────────────────────────────────────────────────
+function setupAudio(stream){
+  try{
+    S.audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+    const src=S.audioCtx.createMediaStreamSource(stream);
+    S.analyser=S.audioCtx.createAnalyser();
+    S.analyser.fftSize=256;
+    src.connect(S.analyser);
+    animMeters();
+  }catch(e){}
+}
+function animMeters(){
+  const buf=new Uint8Array(S.analyser?S.analyser.frequencyBinCount:64);
+  function f(){
+    if(S.analyser) S.analyser.getByteFrequencyData(buf);
+    const avg=buf.reduce((a,b)=>a+b,0)/buf.length;
+    const p=Math.min(95,(avg/128)*100+Math.random()*5);
+    m1.style.width=p+'%';
+    m2.style.width=Math.min(95,p*(0.85+Math.random()*.3))+'%';
+    requestAnimationFrame(f);
+  }
+  f();
+}
+setInterval(()=>{if(!S.analyser){const b=28+Math.random()*42;m1.style.width=b+'%';m2.style.width=(b*(0.8+Math.random()*.4))+'%';}},80);
+
+// ─── WAVEFORM (bottom) ──────────────────────────────────────
+function drawWaveform(){
+  const W=wvCanvas.width, H=wvCanvas.height;
+  wvCtx.fillStyle='#000'; wvCtx.fillRect(0,0,W,H);
+  // draw RGB waveform bars
+  [[0,'rgba(220,60,60,.7)'],[1,'rgba(60,200,80,.7)'],[2,'rgba(60,130,220,.7)']].forEach(([ch,c])=>{
+    wvCtx.fillStyle=c;
+    try{
+      const tmp=document.createElement('canvas');
+      tmp.width=W; tmp.height=H;
+      const tc=tmp.getContext('2d');
+      tc.drawImage(video,0,0,W,H);
+      const img=tc.getImageData(0,0,W,H);
+      for(let x=0;x<W;x++){
+        for(let y=0;y<H;y++){
+          const i=(y*W+x)*4+ch;
+          const v=img.data[i];
+          const py=Math.floor(H-(v/255)*H);
+          wvCtx.fillRect(x,py,1,1);
+        }
+      }
+    }catch(e){
+      for(let x=0;x<W;x++){
+        const v=H/2+Math.sin(x/5+Date.now()/800)*H*0.3*(ch*.4+.6);
+        wvCtx.fillRect(x,Math.floor(v),1,2);
+      }
+    }
+  });
+}
+setInterval(drawWaveform,150);
+
+// ─── SCOPES ─────────────────────────────────────────────────
+function startScopeLoop(){
+  function draw(){
+    if(S.scopes){
+      drawScopeWaveform(); drawVectorscope(); drawScopeHistogram();
+    }
+    requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+function drawScopeWaveform(){
+  const c=wvSc, ctx=c.getContext('2d');
+  const W=c.offsetWidth||100, H=c.offsetHeight||80;
+  c.width=W; c.height=H;
+  ctx.fillStyle='rgba(0,0,0,.9)'; ctx.fillRect(0,0,W,H);
+  try{
+    const tmp=document.createElement('canvas'); tmp.width=W; tmp.height=H;
+    const tc=tmp.getContext('2d'); tc.drawImage(video,0,0,W,H);
+    const img=tc.getImageData(0,0,W,H);
+    [[0,'rgba(255,80,80,.6)'],[1,'rgba(80,255,120,.6)'],[2,'rgba(80,160,255,.6)']].forEach(([ch,col])=>{
+      for(let x=0;x<W;x+=2){
+        const v=img.data[(Math.floor(H/2)*W+x)*4+ch];
+        const py=H-(v/255)*H;
+        ctx.fillStyle=col; ctx.fillRect(x,py,2,2);
+      }
+    });
+  }catch(e){
+    ctx.strokeStyle='rgba(0,229,200,.5)'; ctx.beginPath();
+    for(let x=0;x<W;x++){ctx.lineTo(x,H/2+Math.sin(x/8+Date.now()/600)*H*.35);}
+    ctx.stroke();
+  }
+}
+
+function drawVectorscope(){
+  const c=vsSc, ctx=c.getContext('2d');
+  const W=c.offsetWidth||100, H=c.offsetHeight||80;
+  c.width=W; c.height=H;
+  ctx.fillStyle='rgba(0,0,0,.9)'; ctx.fillRect(0,0,W,H);
+  const cx=W/2, cy=H/2, r=Math.min(W,H)/2*.85;
+  ctx.strokeStyle='rgba(255,255,255,.1)'; ctx.beginPath();
+  ctx.arc(cx,cy,r,0,Math.PI*2); ctx.stroke();
+  ctx.strokeStyle='rgba(255,255,255,.05)';
+  for(let i=0;i<6;i++){
+    const a=i*Math.PI/3;
+    ctx.beginPath(); ctx.moveTo(cx,cy);
+    ctx.lineTo(cx+Math.cos(a)*r,cy+Math.sin(a)*r); ctx.stroke();
+  }
+  try{
+    const tmp=document.createElement('canvas'); tmp.width=40; tmp.height=40;
+    const tc=tmp.getContext('2d'); tc.drawImage(video,0,0,40,40);
+    const img=tc.getImageData(0,0,40,40);
+    for(let i=0;i<img.data.length;i+=4){
+      const R=img.data[i]/255, G=img.data[i+1]/255, B=img.data[i+2]/255;
+      const u=-.147*R-.289*G+.436*B;
+      const v=.615*R-.515*G-.100*B;
+      const x=cx+u*r*2.5, y=cy+v*r*2.5;
+      ctx.fillStyle=`rgba(${img.data[i]},${img.data[i+1]},${img.data[i+2]},.4)`;
+      ctx.fillRect(x,y,1.5,1.5);
+    }
+  }catch(e){
+    for(let i=0;i<60;i++){
+      const a=Math.random()*Math.PI*2, d=Math.random()*r*.6;
+      ctx.fillStyle='rgba(0,229,200,.3)'; ctx.fillRect(cx+Math.cos(a)*d,cy+Math.sin(a)*d,2,2);
+    }
+  }
+}
+
+function drawScopeHistogram(){
+  const c=hsSc, ctx=c.getContext('2d');
+  const W=c.offsetWidth||100, H=c.offsetHeight||80;
+  c.width=W; c.height=H;
+  ctx.fillStyle='#000'; ctx.fillRect(0,0,W,H);
+  try{
+    const tmp=document.createElement('canvas'); tmp.width=W; tmp.height=H;
+    const tc=tmp.getContext('2d'); tc.drawImage(video,0,0,W,H);
+    const img=tc.getImageData(0,0,W,H);
+    const bins=32;
+    const r=new Array(bins).fill(0), g=new Array(bins).fill(0), b=new Array(bins).fill(0);
+    for(let i=0;i<img.data.length;i+=4){
+      r[Math.floor(img.data[i]/(256/bins))]++;
+      g[Math.floor(img.data[i+1]/(256/bins))]++;
+      b[Math.floor(img.data[i+2]/(256/bins))]++;
+    }
+    const mx=Math.max(...r,...g,...b,1);
+    [[r,'rgba(220,60,60,.7)'],[g,'rgba(60,200,80,.7)'],[b,'rgba(60,130,220,.7)']].forEach(([bins2,col])=>{
+      ctx.fillStyle=col;
+      bins2.forEach((v,i)=>ctx.fillRect(i*(W/bins),H-(v/mx)*H*(0.9),(W/bins)-1,(v/mx)*H*.9));
+    });
+  }catch(e){
+    [[`rgba(220,60,60,.6)`],[`rgba(60,200,80,.6)`],[`rgba(60,130,220,.6)`]].forEach(([c2])=>{
+      ctx.fillStyle=c2;
+      for(let i=0;i<16;i++){const h=8+Math.random()*22;ctx.fillRect(i*6,H-h,5,h);}
+    });
+  }
+}
+
+// ─── ZOOM ───────────────────────────────────────────────────
+function setZoom(lv,lb){
+  document.getElementById('lens-val').textContent=lb;
+  zoomEl.textContent=lv+'x';
+  document.querySelectorAll('.zb').forEach(b=>{
+    b.classList.toggle('active',b.querySelector('.zn').textContent===lv+'x');
+  });
+  try{
+    const [t]=S.stream.getVideoTracks();
+    const cap=t.getCapabilities();
+    if(cap.zoom) t.applyConstraints({advanced:[{zoom:cap.zoom.min+(cap.zoom.max-cap.zoom.min)*(lv/5)}]});
+  }catch(e){}
+  showToast(`🔭 ZOOM ${lv}x · ${lb}`);
+}
+
+// ─── TOGGLES ────────────────────────────────────────────────
+function toggleGrid(){
+  S.grid=!S.grid;
+  gridEl.classList.toggle('show',S.grid);
+  document.getElementById('grid-btn').classList.toggle('active',S.grid);
+}
+function toggleSafe(){
+  S.safe=!S.safe;
+  safeEl.classList.toggle('show',S.safe);
+  document.getElementById('safe-btn').classList.toggle('active',S.safe);
+}
+function toggleFocus(){
+  S.focus=!S.focus;
+  focusEl.classList.toggle('show',S.focus);
+  document.getElementById('focus-btn').classList.toggle('active',S.focus);
+}
+function toggleZebra(){
+  S.zebra=!S.zebra;
+  document.getElementById('zebra-canvas').classList.toggle('show',S.zebra);
+  document.getElementById('zebra-btn').classList.toggle('active',S.zebra);
+  showToast(S.zebra?'ZEBRA ON (100 IRE)':'ZEBRA OFF');
+}
+function toggleScopes(){
+  S.scopes=!S.scopes;
+  document.getElementById('scopes').classList.toggle('open',S.scopes);
+  document.getElementById('scope-btn').classList.toggle('active',S.scopes);
+}
+function toggleCinemascope(){
+  S.cinemascope=!S.cinemascope;
+  document.body.classList.toggle('cinemascope',S.cinemascope);
+  document.getElementById('cin-btn').classList.toggle('active',S.cinemascope);
+  showToast(S.cinemascope?'CINEMASCOPE 2.39:1 ON':'CINEMASCOPE OFF');
+}
+
+// ─── LUT ────────────────────────────────────────────────────
+const lutNames2={
+  'lut-rec709':'Rec.709','lut-log':'S-Log3','lut-slog3':'V-Log L',
+  'lut-orange':'Orange & Teal','lut-teal':'Teal Shadow','lut-arri':'ARRI Look',
+  'lut-kodak':'Kodak 2383','lut-fuji':'Fuji 3510','lut-bleach':'Bleach Bypass',
+  'lut-noir':'Noir B&W','lut-matrix':'Cyber Green','lut-off':'No LUT'
+};
+function applyLUT(cls,name,card){
+  S.lut=cls;
+  video.className=cls;
+  document.getElementById('lut-corner').textContent=name;
+  document.getElementById('lut-lbl').textContent=name.split(' ')[0];
+  document.querySelectorAll('.lut-card').forEach(c=>c.classList.remove('active'));
+  if(card) card.classList.add('active');
+  document.getElementById('lut-btn').classList.toggle('active',cls!=='lut-rec709'&&cls!=='lut-off');
+  document.getElementById('quality-badge').textContent = `${S.resolution} · ${S.lut==='lut-log'||S.lut==='lut-slog3'?'LOG':'RAW'} · ${name}`;
+  showToast(`🎨 ${name}`);
+}
+
+// ─── THEME ──────────────────────────────────────────────────
+function setTheme(name,el){
+  document.body.className='theme-'+name;
+  S.theme=name;
+  document.querySelectorAll('.theme-dot').forEach(d=>d.classList.remove('active'));
+  if(el) el.classList.add('active');
+  const names={cinema:'CINEMA',arri:'ARRI',red:'RED',venice:'VENICE',alexa:'ALEXA'};
+  showToast(`🎨 THEME: ${names[name]}`);
+}
+
+// ─── SETTINGS HELPERS ───────────────────────────────────────
+function setResolution(v){
+  S.resolution=v;
+  document.getElementById('b-res').textContent=v+' UHD';
+  document.getElementById('quality-badge').textContent=`${v} · RAW · ${lutNames2[S.lut]||'Rec.709'}`;
+  document.getElementById('res-corner').textContent=v+' · UHD';
+  showToast(`📐 ${v} RESOLUTION`);
+}
+function setFPS(v){
+  S.fps=parseFloat(v);
+  document.getElementById('fps-val').textContent=v;
+  const shutter=Math.round(1/(S.fps/360)*10)/10;
+  document.getElementById('shutter-val').textContent='1/'+(S.fps*2);
+  showToast(`⚡ ${v} FPS`);
+}
+function setShutter(v){
+  document.getElementById('shutter-val').textContent=v+'°';
+}
+function setCodec(v){
+  document.getElementById('b-codec').textContent=v;
+  showToast(`💾 ${v}`);
+}
+function updateRange(el){
+  const min=parseFloat(el.min), max=parseFloat(el.max), val=parseFloat(el.value);
+  const pct=((val-min)/(max-min))*100;
+  el.style.background=`linear-gradient(90deg,var(--accent) ${pct}%,var(--border2) ${pct}%)`;
+}
+
+// ─── PANELS ─────────────────────────────────────────────────
+function openPanel(id){
+  document.getElementById(id).classList.add('show');
+  document.getElementById(id).style.display='flex';
+}
+function closePanel(id){
+  const el=document.getElementById(id);
+  el.classList.remove('show');
+  if(id==='media-panel') el.style.display='none';
+}
+
+// ─── MEDIA ──────────────────────────────────────────────────
+function renderMedia(){
+  const grid=document.getElementById('media-grid');
+  if(!S.clips.length){
+    grid.innerHTML=`<div id="no-clips-msg"><div class="ic">🎬</div><div>No clips yet</div></div>`;
+    return;
+  }
+  grid.innerHTML=S.clips.map(c=>`
+    <div class="media-card" onclick="window.open('${c.url}')">
+      <video src="${c.url}" muted></video>
+      <div class="play">▶</div>
+      <div class="dur">${c.dur}</div>
+      <div class="clip-res">${c.res||'HD'}</div>
+    </div>
+  `).join('');
+}
+
+// ─── TOAST ──────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),2000);
+}
+
+// ─── INIT ───────────────────────────────────────────────────
+window.addEventListener('load',()=>{
+  video.style.display='none';
+  document.getElementById('res-corner').classList.add('show');
+  // Init range inputs
+  document.querySelectorAll('input[type=range]').forEach(updateRange);
+  startCamera();
+});
+// ─── PWA INSTALL ────────────────────────────────────────────
+let deferredPrompt = null;
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  if (!isStandalone) setTimeout(() => {
+    const b = document.getElementById('installbanner');
+    if (b) b.style.display = 'flex';
+  }, 3500);
+});
+
+function installApp() {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(r => {
+      if (r.outcome === 'accepted') showToast('🎉 ProCam installed! Check your home screen!');
+      deferredPrompt = null;
+      document.getElementById('installbanner').style.display = 'none';
+    });
+  } else if (isIOS) {
+    document.getElementById('iosguide').style.display = 'flex';
+    document.getElementById('installbanner').style.display = 'none';
+  } else {
+    showToast('📱 Tap browser menu → Add to Home Screen');
+  }
+}
+
+if (isIOS && !isStandalone) {
+  setTimeout(() => {
+    const b = document.getElementById('installbanner');
+    if (b) {
+      b.style.display = 'flex';
+      const p = b.querySelector('p');
+      if (p) p.textContent = 'Tap Share 📤 → Add to Home Screen → Free!';
+    }
+  }, 3500);
+}
+
+// Inline PWA Manifest
+const mdata = {
+  name: 'ProCam Ultra', short_name: 'ProCam',
+  description: 'Worlds Greatest Camera App',
+  start_url: '.', display: 'fullscreen',
+  background_color: '#080a0d', theme_color: '#c9a84c',
+  icons: [{
+    src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' fill='%23080a0d'/%3E%3Ctext x='50%25' y='62%25' font-size='300' text-anchor='middle' fill='%23c9a84c' font-family='serif' font-weight='bold'%3EP%3C/text%3E%3C/svg%3E",
+    sizes: '512x512', type: 'image/svg+xml', purpose: 'any maskable'
+  }]
+};
+const mb = new Blob([JSON.stringify(mdata)], {type: 'application/json'});
+document.addEventListener('DOMContentLoaded', () => {
+  const l = document.createElement('link');
+  l.rel = 'manifest'; l.href = URL.createObjectURL(mb);
+  document.head.appendChild(l);
+});
+</script>
+
+<!-- ── INSTALL BANNER ────────────────────── -->
+<div id="installbanner" style="display:none;position:fixed;bottom:0;left:0;right:0;background:linear-gradient(135deg,rgba(8,10,13,.98),rgba(16,22,30,.98));border-top:1px solid #7a6330;padding:12px 14px;z-index:9999;align-items:center;gap:10px;backdrop-filter:blur(14px);animation:slideUp .4s ease;">
+  <div style="width:42px;height:42px;border-radius:10px;background:linear-gradient(135deg,#7a6330,#c9a84c);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:15px;color:#080a0d;flex-shrink:0;">P</div>
+  <div style="flex:1;">
+    <h4 style="font-size:12px;font-weight:700;color:#dde4f0;letter-spacing:1px;margin-bottom:2px;">INSTALL PROCAM</h4>
+    <p style="font-size:9px;color:#3d4f60;">Add to home screen · Works offline · Free forever</p>
+  </div>
+  <button onclick="installApp()" style="background:linear-gradient(135deg,#c9a84c,#e8820a);color:#080a0d;border:none;border-radius:8px;padding:9px 14px;font-size:10px;font-weight:700;cursor:pointer;letter-spacing:1px;flex-shrink:0;">INSTALL</button>
+  <button onclick="this.parentElement.style.display='none'" style="background:none;border:none;color:#3d4f60;cursor:pointer;font-size:18px;padding:4px;flex-shrink:0;">✕</button>
+</div>
+
+<!-- ── iOS INSTALL GUIDE ─────────────────── -->
+<div id="iosguide" onclick="if(event.target===this)this.style.display='none'" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.87);z-index:10000;align-items:flex-end;justify-content:center;backdrop-filter:blur(10px);">
+  <div style="background:#0d1117;border:1px solid #243040;border-radius:18px 18px 0 0;padding:24px 20px;width:100%;max-width:480px;">
+    <h3 style="font-size:13px;font-weight:700;letter-spacing:2px;color:#c9a84c;margin-bottom:18px;text-align:center;">📱 INSTALL PROCAM ON iPHONE</h3>
+    <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:14px;">
+      <div style="min-width:28px;height:28px;border-radius:50%;background:#c9a84c;color:#080a0d;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;">1</div>
+      <p style="font-size:13px;color:#8898aa;line-height:1.5;">Tap the <strong style="color:#dde4f0;">Share button 📤</strong> at the bottom of Safari browser</p>
+    </div>
+    <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:14px;">
+      <div style="min-width:28px;height:28px;border-radius:50%;background:#c9a84c;color:#080a0d;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;">2</div>
+      <p style="font-size:13px;color:#8898aa;line-height:1.5;">Scroll down in the menu and tap <strong style="color:#dde4f0;">"Add to Home Screen"</strong></p>
+    </div>
+    <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:18px;">
+      <div style="min-width:28px;height:28px;border-radius:50%;background:#c9a84c;color:#080a0d;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;">3</div>
+      <p style="font-size:13px;color:#8898aa;line-height:1.5;">Tap <strong style="color:#dde4f0;">"Add"</strong> — ProCam icon appears on your home screen! 🎬</p>
+    </div>
+    <button onclick="document.getElementById('iosguide').style.display='none'" style="width:100%;background:#1a2535;color:#8898aa;border:1px solid #243040;border-radius:10px;padding:13px;font-size:11px;cursor:pointer;letter-spacing:1.5px;">GOT IT — THANKS! ✓</button>
+  </div>
+</div>
+
+<style>@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}</style>
+</body>
+</html>
